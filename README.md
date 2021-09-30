@@ -1,0 +1,38 @@
+# Transaction Processing Tool
+A tool that reads transactions from a CSV file and outputs account states as CSV text written to
+stdout. A `default.nix` file is included for the convenience of NixOS users like myself -- if you
+do not know what that is, it is safe to ignore the file.
+
+## Dependencies
+* serde -- because who in their right mind does serialization and deserialization in Rust without
+  Serde
+* csv -- for ease of reading and writing CSV files
+* rocksdb -- for persistence of user data both during the interpretation of a single file and
+  between interpretations of multiple files
+* tokio and tokio-util -- for streaming of CSV data instead of loading the entire file at once
+
+## Design decisions
+
+### On RocksDB
+RocksDB is a well-known and relatively efficient key-value store database. The motive behind using
+it is two-fold. To work effectively at transaction processing, user data needs to be persistent. If
+a user's balance resets after every batch of transactions is processed, you aren't being a very good
+bank. It also serves to minimize the space complexity of the solution in RAM. As user IDs are `u16`
+values, a simple `HashMap` could take well over a gibibyte of RAM. While this wouldn't be a problem
+on a most servers, a simple cloud VPS could easily be overloaded with so much memory use.
+
+Ideally the exact nature of the algorithm behind this decision would be configurable, but as the
+command line arguments are limited to the path of a single CSV file and introducing a configuration
+file seems overkill, I am assuming sane defaults for a low-end server with the assumption that the
+`const` variables defined could easily be made configurable in a later iteration of the tool.
+
+### On Tokio and Tokio-Util
+These crates offer asynchronous reading and writing to files as well as framed reading allowing
+very easy streaming of data. While there are likely better solutions to this problem, Tokio and its
+related crates are well-known both to myself and to the Rust community as a whole ensuring that the
+solution is well-maintainable.
+
+### On a `TransactionSender` trait
+I decided to implement transaction processing for any valid `TransactionSender` such as to allow
+the eventual expansion to more complex functionality such as processing requests from several
+network streams.
