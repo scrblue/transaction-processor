@@ -4,7 +4,7 @@ use tokio::sync::mpsc;
 use super::*;
 
 pub mod hashmap;
-pub mod rocksdb;
+pub mod sled_db;
 
 /// The layer which stores `Client`s, processes `Transaction`s, and streams the stored `Client`s
 /// after all `Transaction`s  have been processed

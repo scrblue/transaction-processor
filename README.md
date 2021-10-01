@@ -14,8 +14,8 @@ expected from a banking application, please disable this feature.
 * serde -- because who in their right mind does serialization and deserialization in Rust without
   Serde
 * csv-async -- for ease of reading and writing CSV files
-* rocksdb -- for persistence of user and transaction data both during the interpretation of a single
-  file and between interpretations of multiple files
+* sled and bincode -- for persistence of user and transaction data both during the interpretation
+  of a single file and between interpretations of multiple files
 * tokio and tokio-stream -- for streaming of CSV data instead of loading the entire file at once
 
 ## Dev dependencies
@@ -23,14 +23,16 @@ expected from a banking application, please disable this feature.
 
 ## Design decisions
 
-### On RocksDB
-RocksDB is a well-known and relatively efficient key-value store database. The motive behind using
+### On sled
+"sled" is a Rust-native and relatively efficient key-value store database. The motive behind using
 it is two-fold. To work effectively at transaction processing, user and transaction data needs to be
 persistent. If a user's balance resets after every batch of transactions is processed, you aren't
 being a very good bank. It also serves to minimize the space complexity of the solution in RAM. As
 user IDs are `u16` values, a simple `HashMap` could take well over a gibibyte of RAM. While this
 wouldn't be a problem on a most servers, a simple cloud VPS could easily be overloaded with so much
 memory use.
+
+RocksDB was initially considered, but it did not fair well in the asynchronous environment.
 
 Ideally the exact nature of the algorithm behind this decision would be configurable, but as the
 command line arguments are limited to the path of a single CSV file and introducing a configuration
