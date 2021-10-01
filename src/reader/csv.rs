@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::Path;
 use tokio::{fs::File, sync::mpsc};
 use tokio_stream::StreamExt;
 
-use crate::{Transaction, TransactionType};
 use super::*;
+use crate::{Transaction, TransactionType};
 
 /// A Transaction to using a floating point monetary value
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct CsvTransaction {
     /// Types including deposits, withdrawals, disputes, resolutions of disputes, and chargebacks
+    #[serde(rename = "type")]
     ty: TransactionType,
 
     /// A unique client ID for which all transactions are tied to
@@ -29,9 +30,9 @@ impl Into<Transaction> for CsvTransaction {
             ty: self.ty,
             client: self.client,
             tx: self.tx,
-            amount: self.amount.map(|fp_num| {
-                fp_num * 1000 as f64;
-                fp_num.round();
+            amount: self.amount.map(|mut fp_num| {
+                fp_num = fp_num * 10000 as f64;
+                fp_num = fp_num.round();
 
                 // FIXME: Casting like this is unsafe without more checks
                 fp_num as i64
@@ -54,7 +55,7 @@ pub struct CsvReader {
 }
 
 impl CsvReader {
-    pub async fn new(file: &PathBuf, buffer_size: usize) -> std::io::Result<Self> {
+    pub async fn new(file: impl AsRef<Path>, buffer_size: usize) -> std::io::Result<Self> {
         let file = File::open(file).await?;
         let (sender, receiver) = mpsc::channel(buffer_size);
         let receiver = Some(receiver);
@@ -67,18 +68,22 @@ impl CsvReader {
     }
 
     async fn read(self) {
-        let mut reader = csv_async::AsyncDeserializer::from_reader(self.file);
+        let mut reader = csv_async::AsyncReaderBuilder::new()
+            .trim(csv_async::Trim::All)
+            .create_deserializer(self.file);
         let reader = reader.deserialize();
 
-        let mut reader = reader.filter_map(|result: Result<CsvTransaction, _>| -> Option<Transaction> {
-            // TODO: Return an error instaed of skipping over lines that don't deserialize properly
-            if let Ok(result) = result {
-                let result= result.into();
-                Some(result)
-            } else {
-                None
-            }
-        });
+        let mut reader =
+            reader.filter_map(|result: Result<CsvTransaction, _>| -> Option<Transaction> {
+                println!("{:?}", result);
+                // TODO: Return an error instaed of skipping over lines that don't deserialize properly
+                if let Ok(result) = result {
+                    let result = result.into();
+                    Some(result)
+                } else {
+                    None
+                }
+            });
 
         // The method then populates the buffer of the channel until it is full, waiting for a spot
         // to become available before continuing ensuring that there are never more than the
@@ -107,4 +112,74 @@ impl TransactionReader for CsvReader {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    use std::{convert::TryInto, path::PathBuf};
+    use tempfile::TempDir;
+    use tokio::io::AsyncWriteExt;
+
+    #[tokio::test]
+    async fn basic() {
+        let dir = TempDir::new_in("./").unwrap();
+        let mut path: PathBuf = dir.path().into();
+        path.push("test.csv");
+
+        let file_contents = r#"type, client, tx, amount
+		deposit, 1, 1, 1.0
+		deposit, 2, 2, 2.0
+		deposit, 1, 3, 2.0
+		withdrawal, 1, 4, 1.5
+		withdrawal, 2, 5, 3.0
+		"#;
+
+        let expected = vec![
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 1,
+                tx: 1,
+                amount: Some(10000),
+            },
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 2,
+                tx: 2,
+                amount: Some(20000),
+            },
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 1,
+                tx: 3,
+                amount: Some(20000),
+            },
+            Transaction {
+                ty: TransactionType::Withdrawal,
+                client: 1,
+                tx: 4,
+                amount: Some(15000),
+            },
+            Transaction {
+                ty: TransactionType::Withdrawal,
+                client: 2,
+                tx: 5,
+                amount: Some(30000),
+            },
+        ];
+
+        // Ensure the File object has been dropped before attempting to read from it
+        {
+            let mut file = File::create(&path).await.unwrap();
+            file.write_all(file_contents.as_bytes()).await.unwrap();
+        }
+
+        let reader = CsvReader::new(&path, 2).await.unwrap();
+        let mut receiver = reader.start();
+
+        let mut actual = Vec::new();
+        while let Some(transaction) = receiver.recv().await {
+            actual.push(transaction);
+        }
+
+        assert_eq!(expected, actual);
+    }
+}

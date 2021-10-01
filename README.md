@@ -11,6 +11,9 @@ do not know what that is, it is safe to ignore the file.
   file and between interpretations of multiple files
 * tokio and tokio-stream -- for streaming of CSV data instead of loading the entire file at once
 
+## Dev Dependencies
+* tempfile -- for creating directories and files for testing
+
 ## Design decisions
 
 ### On RocksDB

@@ -8,8 +8,9 @@ mod reader;
 // TODO: Make this number configurable
 const READER_BUFFER: usize = 1024;
 
-#[derive(Serialize, Deserialize)]
-enum TransactionType {
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TransactionType {
 	Deposit,
 	Withdrawal,
 	Dispute,
@@ -18,9 +19,10 @@ enum TransactionType {
 }
 
 /// A single transaction to be processed by the application
-#[derive(Serialize, Deserialize)]
-struct Transaction {
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Transaction {
     /// Types including deposits, withdrawals, disputes, resolutions of disputes, and chargebacks
+    #[serde(rename = "type")]
 	ty: TransactionType,
 
 	/// A unique client ID for which all transactions are tied to

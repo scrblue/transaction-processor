@@ -9,5 +9,8 @@ edition = "2018"
 csv-async = { version = "1.1.6", features = ["tokio"] }
 rocksdb = "0.17"
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1.12", features = ["fs", "rt", "sync"] }
+tokio = { version = "1.12", features = ["fs", "macros", "rt", "sync"] }
 tokio-stream = "0.1.7"
+
+[dev-dependencies]
+tempfile = "3.2.0"
