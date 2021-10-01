@@ -33,6 +33,7 @@ pub struct Transaction {
 	tx: u32,
 
 	/// The amount of the deposit or withdrawal. This field will be None for any other TransactionType
+    #[serde(default)]
 	amount: Option<i64>,
 }
 

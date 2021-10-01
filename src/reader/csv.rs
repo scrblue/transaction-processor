@@ -21,6 +21,7 @@ struct CsvTransaction {
     tx: u32,
 
     /// The amount of the deposit or withdrawal. This field will be None for any other TransactionType
+    #[serde(default)]
     amount: Option<f64>,
 }
 
@@ -70,12 +71,12 @@ impl CsvReader {
     async fn read(self) {
         let mut reader = csv_async::AsyncReaderBuilder::new()
             .trim(csv_async::Trim::All)
+            .flexible(true)
             .create_deserializer(self.file);
         let reader = reader.deserialize();
 
         let mut reader =
             reader.filter_map(|result: Result<CsvTransaction, _>| -> Option<Transaction> {
-                println!("{:?}", result);
                 // TODO: Return an error instaed of skipping over lines that don't deserialize properly
                 if let Ok(result) = result {
                     let result = result.into();
@@ -182,4 +183,123 @@ mod tests {
 
         assert_eq!(expected, actual);
     }
+
+    #[tokio::test]
+    async fn skip_malformed_data() {
+        let dir = TempDir::new_in("./").unwrap();
+        let mut path: PathBuf = dir.path().into();
+        path.push("test.csv");
+
+        let file_contents = r#"type, client, tx, amount
+		deposit, 1, 1, 1.0
+		deposit, 2, 2, 2.0
+		deposit, 1, 3, 2.0
+		deposit, invalid, 2, 2.0
+		withdrawal, 1, 4, 1.5
+		withdrawal, 2, 5, 3.0
+		"#;
+
+        let expected = vec![
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 1,
+                tx: 1,
+                amount: Some(10000),
+            },
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 2,
+                tx: 2,
+                amount: Some(20000),
+            },
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 1,
+                tx: 3,
+                amount: Some(20000),
+            },
+            Transaction {
+                ty: TransactionType::Withdrawal,
+                client: 1,
+                tx: 4,
+                amount: Some(15000),
+            },
+            Transaction {
+                ty: TransactionType::Withdrawal,
+                client: 2,
+                tx: 5,
+                amount: Some(30000),
+            },
+        ];
+
+        {
+            let mut file = File::create(&path).await.unwrap();
+            file.write_all(file_contents.as_bytes()).await.unwrap();
+        }
+
+        let reader = CsvReader::new(&path, 2).await.unwrap();
+        let mut receiver = reader.start();
+
+        let mut actual = Vec::new();
+        while let Some(transaction) = receiver.recv().await {
+            actual.push(transaction);
+        }
+
+        assert_eq!(expected, actual);
+    }
+
+	#[tokio::test]
+	async fn test_dispute_resolve_and_chargeback() {
+        let dir = TempDir::new_in("./").unwrap();
+        let mut path: PathBuf = dir.path().into();
+        path.push("test.csv");
+
+        let file_contents = r#"type, client, tx, amount
+        deposit, 1, 1, 1.0
+		dispute, 1, 1
+		resolve, 1, 1
+		chargeback, 1, 1
+		"#;
+
+        let expected = vec![
+            Transaction {
+                ty: TransactionType::Deposit,
+                client: 1,
+                tx: 1,
+                amount: Some(10000),
+            },
+            Transaction {
+                ty: TransactionType::Dispute,
+                client: 1,
+                tx: 1,
+                amount: None,
+            },
+            Transaction {
+                ty: TransactionType::Resolve,
+                client: 1,
+                tx: 1,
+                amount: None,
+            },
+            Transaction {
+                ty: TransactionType::Chargeback,
+                client: 1,
+                tx: 1,
+                amount: None,
+            },
+        ];
+
+        {
+            let mut file = File::create(&path).await.unwrap();
+            file.write_all(file_contents.as_bytes()).await.unwrap();
+        }
+
+        let reader = CsvReader::new(&path, 2).await.unwrap();
+        let mut receiver = reader.start();
+
+        let mut actual = Vec::new();
+        while let Some(transaction) = receiver.recv().await {
+            actual.push(transaction);
+        }
+
+        assert_eq!(expected, actual);	}
 }
