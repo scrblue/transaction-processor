@@ -1,5 +1,14 @@
+use serde::{Serialize, Deserialize};
+
 mod reader;
 
+/// The number of [`Transaction`]s to allow in the [`tokio::sync::mpsc::Receiver`]'s queue. Each
+/// [`Transaction`] will be roughly 120 bytes (plus padding) and the overhead of the mpsc channel.
+
+// TODO: Make this number configurable
+const READER_BUFFER: usize = 1024;
+
+#[derive(Serialize, Deserialize)]
 enum TransactionType {
 	Deposit,
 	Withdrawal,
@@ -9,6 +18,7 @@ enum TransactionType {
 }
 
 /// A single transaction to be processed by the application
+#[derive(Serialize, Deserialize)]
 struct Transaction {
     /// Types including deposits, withdrawals, disputes, resolutions of disputes, and chargebacks
 	ty: TransactionType,
@@ -26,6 +36,7 @@ struct Transaction {
 
 
 /// A single client's data to be output by the application
+#[derive(Serialize, Deserialize)]
 struct Client {
     /// The total funds available for withdrawal or other use.
 	available: i64,
