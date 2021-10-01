@@ -3,6 +3,11 @@ A tool that reads transactions from a CSV file and outputs account states as CSV
 stdout. A `default.nix` file is included for the convenience of NixOS users like myself -- if you
 do not know what that is, it is safe to ignore the file.
 
+## A very important note
+By default this crate has the `no_persist` feature enabled such as to make tests run more easily.
+If you expect user and transaction data to persist between runs of the application, as would be
+expected from a banking application, please disable this feature.
+
 ## Dependencies
 * serde -- because who in their right mind does serialization and deserialization in Rust without
   Serde
@@ -11,7 +16,7 @@ do not know what that is, it is safe to ignore the file.
   file and between interpretations of multiple files
 * tokio and tokio-stream -- for streaming of CSV data instead of loading the entire file at once
 
-## Dev Dependencies
+## Dev dependencies
 * tempfile -- for creating directories and files for testing
 
 ## Design decisions
@@ -29,6 +34,9 @@ Ideally the exact nature of the algorithm behind this decision would be configur
 command line arguments are limited to the path of a single CSV file and introducing a configuration
 file seems overkill, I am assuming sane defaults for a low-end server with the assumption that the
 `const` variables defined could easily be made configurable in a later iteration of the tool.
+
+Note that RocksDB is only used when the `no_persist` feature is disabled. Otherwise a `HashMap` is
+used.
 
 ### On Tokio and Tokio-Util
 These crates offer asynchronous reading and writing to files as well as allowing very easy streaming

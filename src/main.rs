@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 
+mod db_layer;
 mod reader;
 
 /// The number of [`Transaction`]s to allow in the [`tokio::sync::mpsc::Receiver`]'s queue. Each
@@ -40,7 +41,7 @@ pub struct Transaction {
 
 /// A single client's data to be output by the application
 #[derive(Serialize, Deserialize)]
-struct Client {
+pub struct Client {
     /// The total funds available for withdrawal or other use.
 	available: i64,
 
