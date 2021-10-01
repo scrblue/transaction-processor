@@ -249,7 +249,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_dispute_resolve_and_chargeback() {
+    async fn dispute_resolve_and_chargeback() {
         let dir = TempDir::new_in("./").unwrap();
         let mut path: PathBuf = dir.path().into();
         path.push("test.csv");

@@ -14,7 +14,11 @@ const READER_BUFFER: usize = 1024;
 // TODO: Make this number configurable
 const DB_BUFFER: usize = 1024;
 
+/// The path of the RocksDB key value store
+const ROCKS_DB_PATH: &str = "./database";
+
 /// A global error type
+#[derive(Debug)]
 pub enum Error {
     /// If a Deposit or Withdrawal transaction has no amount
     NoAmount,
@@ -61,7 +65,7 @@ pub struct Transaction {
 }
 
 /// A single client's data to be output by the application
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Client {
     /// The client ID
     client: u16,

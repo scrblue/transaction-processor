@@ -14,10 +14,7 @@ pub trait DbLayer {
     async fn write_transaction(&mut self, transaction: Transaction) -> Result<(), Error>;
 
     /// Get a single transaction from the DBLayer implementor
-    async fn get_transaction(
-        &mut self,
-        transaction_id: u32,
-    ) -> Result<Option<Transaction>, Error>;
+    async fn get_transaction(&mut self, transaction_id: u32) -> Result<Option<Transaction>, Error>;
 
     /// Write a single client to the DbLayer implementor
     async fn write_client(&mut self, client: Client) -> Result<(), Error>;

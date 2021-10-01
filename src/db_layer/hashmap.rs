@@ -28,7 +28,7 @@ impl HashMapDb {
 
     async fn stream(mut self) {
         for (_id, client) in self.clients_map.drain() {
-			self.clients_sender.send(Ok(client)).await;
+            self.clients_sender.send(Ok(client)).await;
         }
     }
 }
