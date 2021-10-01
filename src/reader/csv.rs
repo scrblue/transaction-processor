@@ -27,6 +27,7 @@ struct CsvTransaction {
 
 impl Into<Transaction> for CsvTransaction {
     fn into(self) -> Transaction {
+        // TODO: More elegant f64 -> i64 conversion
         Transaction {
             ty: self.ty,
             client: self.client,

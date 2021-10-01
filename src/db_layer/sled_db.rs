@@ -21,6 +21,8 @@ impl SledDb {
         let (clients_sender, clients_receiver) = mpsc::channel(buffer_size);
         let clients_receiver = Some(clients_receiver);
 
+		db.flush()?;
+		
         Ok(SledDb {
             db,
             clients_sender,
@@ -79,6 +81,7 @@ impl DbLayer for SledDb {
             transaction.tx.to_le_bytes(),
             bincode::serialize(&transaction).unwrap(),
         )?;
+        self.db.flush()?;
         Ok(())
     }
     async fn get_transaction(&mut self, transaction_id: u32) -> Result<Option<Transaction>, Error> {
@@ -87,7 +90,11 @@ impl DbLayer for SledDb {
             .get(transaction_id.to_le_bytes())?
             .map(|bytes| bincode::deserialize(&bytes))
         {
-            result.map_err(|e| Error::DbError(format!("{}", e)))
+            if let Ok(transaction) = result {
+				Ok(Some(transaction))
+            } else {
+				Ok(None)
+            }
         } else {
             Ok(None)
         }
@@ -99,6 +106,7 @@ impl DbLayer for SledDb {
             client.client.to_le_bytes(),
             bincode::serialize(&client).unwrap(),
         )?;
+        self.db.flush()?;
         Ok(())
     }
     async fn get_client(&mut self, client_id: u16) -> Result<Option<Client>, Error> {
@@ -107,7 +115,11 @@ impl DbLayer for SledDb {
             .get(client_id.to_le_bytes())?
             .map(|bytes| bincode::deserialize(&bytes))
         {
-            result.map_err(|e| Error::DbError(format!("{}", e)))
+            if let Ok(client) = result {
+				Ok(Some(client))
+            } else {
+				Ok(None)
+            }
         } else {
             Ok(None)
         }

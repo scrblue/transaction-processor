@@ -109,13 +109,13 @@ async fn main() {
     #[cfg(feature = "no_persist")]
     let mut db_layer = db_layer::hashmap::HashMapDb::new(DB_BUFFER);
     #[cfg(not(feature = "no_persist"))]
-    let mut db_layer = db_layer::sled_db::new(DB_PATH, DB_BUFFER);
+    let mut db_layer = db_layer::sled_db::SledDb::new(DB_PATH, DB_BUFFER).unwrap();
 
     // Process each transaction from the reader's receiver
     while let Some(input) = receiver.recv().await {
-        transaction_processing::process_transaction(&mut db_layer, input)
-            .await
-            .unwrap()
+        // Fail silently here
+        let _ = transaction_processing::process_transaction(&mut db_layer, input)
+            .await;
     }
 
     // When all transactions in the batch have been processed, write the final state of each Client
