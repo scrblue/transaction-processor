@@ -9,6 +9,8 @@ If you expect user and transaction data to persist between runs of the applicati
 expected from a banking application, please disable this feature.
 
 ## Dependencies
+* async-traits -- For ease of maintenance the reading, processing, and writing of data has been
+  abstracted with traits
 * serde -- because who in their right mind does serialization and deserialization in Rust without
   Serde
 * csv-async -- for ease of reading and writing CSV files
@@ -35,8 +37,7 @@ command line arguments are limited to the path of a single CSV file and introduc
 file seems overkill, I am assuming sane defaults for a low-end server with the assumption that the
 `const` variables defined could easily be made configurable in a later iteration of the tool.
 
-Note that RocksDB is only used when the `no_persist` feature is disabled. Otherwise a `HashMap` is
-used.
+NOTE: If `no_persist` is enabled, a `HashMap` will be used instead.
 
 ### On Tokio and Tokio-Util
 These crates offer asynchronous reading and writing to files as well as allowing very easy streaming
@@ -44,10 +45,13 @@ of data. While there are likely better solutions to this problem, Tokio and its 
 well-known both to myself and to the Rust community as a whole ensuring that the solution is
 well-maintainable.
 
-### On a `TransactionReader` trait
+### On a `TransactionReader` and `DbLayer` trait
 I decided to implement transaction processing for any valid `TransactionReader` such as to allow
 the eventual expansion to more complex functionality such as processing requests from several
-network streams.
+network streams. The transaction and client persistence is done through an implementor of the
+`DbLayer` trait. The `DbLayer` trait is implemented for a RocksDB instance and for a struct
+containing two `HashMap`s by default. The one used when running the project depends on the
+`no_persist` feature.
 
 ### On fixed point numbers
 Fixed point numbers are used over floating point numbers such as to prevent rounding errors. `i64`s

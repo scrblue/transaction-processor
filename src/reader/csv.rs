@@ -248,8 +248,8 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-	#[tokio::test]
-	async fn test_dispute_resolve_and_chargeback() {
+    #[tokio::test]
+    async fn test_dispute_resolve_and_chargeback() {
         let dir = TempDir::new_in("./").unwrap();
         let mut path: PathBuf = dir.path().into();
         path.push("test.csv");
@@ -301,5 +301,6 @@ mod tests {
             actual.push(transaction);
         }
 
-        assert_eq!(expected, actual);	}
+        assert_eq!(expected, actual);
+    }
 }
