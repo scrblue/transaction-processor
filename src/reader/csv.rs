@@ -42,14 +42,13 @@ impl CsvReader {
         let mut reader =
             reader.filter_map(|result: Result<HumanReadableTransaction, _>| -> Option<Transaction> {
                 // TODO: Return an error instaed of skipping over lines that don't deserialize properly
-                // if let Ok(result) = result {
-                //     let result = result.into();
-                //     Some(result)
-                // } else {
-                //     None
-                // }
-                //
-                Some(result.unwrap().into())
+                if let Ok(result) = result {
+                    let result = result.into();
+                    Some(result)
+                } else {
+                    None
+                }
+                
             });
 
         // The method then populates the buffer of the channel until it is full, waiting for a spot
@@ -106,30 +105,35 @@ mod tests {
                 client: 1,
                 tx: 1,
                 amount: Some(10000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 2,
                 tx: 2,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 1,
                 tx: 3,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 1,
                 tx: 4,
                 amount: Some(15000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 2,
                 tx: 5,
                 amount: Some(30000),
+                disputed: false,
             },
         ];
 
@@ -171,30 +175,35 @@ mod tests {
                 client: 1,
                 tx: 1,
                 amount: Some(10000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 2,
                 tx: 2,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 1,
                 tx: 3,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 1,
                 tx: 4,
                 amount: Some(15000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 2,
                 tx: 5,
                 amount: Some(30000),
+                disputed: false,
             },
         ];
 
@@ -233,24 +242,28 @@ mod tests {
                 client: 1,
                 tx: 1,
                 amount: Some(10000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Dispute,
                 client: 1,
                 tx: 1,
                 amount: None,
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Resolve,
                 client: 1,
                 tx: 1,
                 amount: None,
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Chargeback,
                 client: 1,
                 tx: 1,
                 amount: None,
+                disputed: false,
             },
         ];
 

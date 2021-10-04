@@ -170,30 +170,35 @@ mod tests {
                 client: 1,
                 tx: 1,
                 amount: Some(10000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 2,
                 tx: 2,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Deposit,
                 client: 1,
                 tx: 3,
                 amount: Some(20000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 1,
                 tx: 4,
                 amount: Some(15000),
+                disputed: false,
             },
             Transaction {
                 ty: TransactionType::Withdrawal,
                 client: 2,
                 tx: 5,
                 amount: Some(30000),
+                disputed: false,
             },
         ];
 
