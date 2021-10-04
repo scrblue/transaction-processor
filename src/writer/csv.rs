@@ -18,8 +18,9 @@ impl CsvWriter {
 impl ClientWriter for CsvWriter {
     // FIXME: Eliminate unwrap
     async fn append_client(&mut self, client: Client) -> Result<(), Error> {
-		self.writer.serialize(client).await.unwrap();
-		Ok(())
+        let client: HumanReadableClient = client.into();
+        self.writer.serialize(client).await.unwrap();
+        Ok(())
     }
 
     async fn close(self) -> Result<(), Error> {

@@ -21,8 +21,8 @@ impl SledDb {
         let (clients_sender, clients_receiver) = mpsc::channel(buffer_size);
         let clients_receiver = Some(clients_receiver);
 
-		db.flush()?;
-		
+        db.flush()?;
+
         Ok(SledDb {
             db,
             clients_sender,
@@ -91,9 +91,9 @@ impl DbLayer for SledDb {
             .map(|bytes| bincode::deserialize(&bytes))
         {
             if let Ok(transaction) = result {
-				Ok(Some(transaction))
+                Ok(Some(transaction))
             } else {
-				Ok(None)
+                Ok(None)
             }
         } else {
             Ok(None)
@@ -116,9 +116,9 @@ impl DbLayer for SledDb {
             .map(|bytes| bincode::deserialize(&bytes))
         {
             if let Ok(client) = result {
-				Ok(Some(client))
+                Ok(Some(client))
             } else {
-				Ok(None)
+                Ok(None)
             }
         } else {
             Ok(None)

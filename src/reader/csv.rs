@@ -4,44 +4,7 @@ use tokio::{fs::File, sync::mpsc};
 use tokio_stream::StreamExt;
 
 use super::*;
-use crate::{Transaction, TransactionType};
-
-/// A Transaction to using a floating point monetary value
-#[derive(Serialize, Deserialize, Debug)]
-struct CsvTransaction {
-    /// Types including deposits, withdrawals, disputes, resolutions of disputes, and chargebacks
-    #[serde(rename = "type")]
-    ty: TransactionType,
-
-    /// A unique client ID for which all transactions are tied to
-    client: u16,
-
-    /// A unique transaction ID given to deposits or withdrawals. Disputes, resolutions, and
-    /// chargebacks reference transaction IDs of deposits
-    tx: u32,
-
-    /// The amount of the deposit or withdrawal. This field will be None for any other TransactionType
-    #[serde(default)]
-    amount: Option<f64>,
-}
-
-impl Into<Transaction> for CsvTransaction {
-    fn into(self) -> Transaction {
-        // TODO: More elegant f64 -> i64 conversion
-        Transaction {
-            ty: self.ty,
-            client: self.client,
-            tx: self.tx,
-            amount: self.amount.map(|mut fp_num| {
-                fp_num = fp_num * 10000 as f64;
-                fp_num = fp_num.round();
-
-                // FIXME: Casting like this is unsafe without more checks
-                fp_num as i64
-            }),
-        }
-    }
-}
+use crate::{HumanReadableTransaction, Transaction, TransactionType};
 
 /// An Implementor of the TransactionReader trait which reads CSV values from a given file
 pub struct CsvReader {
@@ -77,14 +40,16 @@ impl CsvReader {
         let reader = reader.deserialize();
 
         let mut reader =
-            reader.filter_map(|result: Result<CsvTransaction, _>| -> Option<Transaction> {
+            reader.filter_map(|result: Result<HumanReadableTransaction, _>| -> Option<Transaction> {
                 // TODO: Return an error instaed of skipping over lines that don't deserialize properly
-                if let Ok(result) = result {
-                    let result = result.into();
-                    Some(result)
-                } else {
-                    None
-                }
+                // if let Ok(result) = result {
+                //     let result = result.into();
+                //     Some(result)
+                // } else {
+                //     None
+                // }
+                //
+                Some(result.unwrap().into())
             });
 
         // The method then populates the buffer of the channel until it is full, waiting for a spot

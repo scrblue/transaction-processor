@@ -47,13 +47,14 @@ of data. While there are likely better solutions to this problem, Tokio and its 
 well-known both to myself and to the Rust community as a whole ensuring that the solution is
 well-maintainable.
 
-### On a `TransactionReader` and `DbLayer` trait
+### On a `TransactionReader`, `DbLayer`, and `ClientWriter` trait
 I decided to implement transaction processing for any valid `TransactionReader` such as to allow
 the eventual expansion to more complex functionality such as processing requests from several
 network streams. The transaction and client persistence is done through an implementor of the
-`DbLayer` trait. The `DbLayer` trait is implemented for a RocksDB instance and for a struct
-containing two `HashMap`s by default. The one used when running the project depends on the
-`no_persist` feature.
+`DbLayer` trait. The `DbLayer` trait is implemented for a sled instance and for a struct containing
+two `HashMap`s by default. The one used when running the project depends on the `no_persist`
+feature. Finally a `ClientWriter` trait is allowed for the same reasons as the `TransactionReader`.
+It's sole implementor is a stuxt that writes CSV data to stdout as per the specification.
 
 ### On fixed point numbers
 Fixed point numbers are used over floating point numbers such as to prevent rounding errors. `i64`s
