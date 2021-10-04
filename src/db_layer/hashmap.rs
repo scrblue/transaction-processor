@@ -40,10 +40,7 @@ impl DbLayer for HashMapDb {
         Ok(())
     }
     async fn get_transaction(&mut self, transaction_id: u32) -> Result<Option<Transaction>, Error> {
-        Ok(self
-            .transactions_map
-            .get(&transaction_id)
-            .map(|ref_val| *ref_val))
+        Ok(self.transactions_map.get(&transaction_id).copied())
     }
 
     async fn write_client(&mut self, client: Client) -> Result<(), Error> {
@@ -51,7 +48,7 @@ impl DbLayer for HashMapDb {
         Ok(())
     }
     async fn get_client(&mut self, client_id: u16) -> Result<Option<Client>, Error> {
-        Ok(self.clients_map.get(&client_id).map(|ref_val| *ref_val))
+        Ok(self.clients_map.get(&client_id).copied())
     }
 
     async fn stream_clients(mut self) -> mpsc::Receiver<Result<Client, Error>> {

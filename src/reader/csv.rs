@@ -38,8 +38,8 @@ impl CsvReader {
             .create_deserializer(self.file);
         let reader = reader.deserialize();
 
-        let mut reader =
-            reader.filter_map(|result: Result<HumanReadableTransaction, _>| -> Option<Transaction> {
+        let mut reader = reader.filter_map(
+            |result: Result<HumanReadableTransaction, _>| -> Option<Transaction> {
                 // TODO: Return an error instaed of skipping over lines that don't deserialize properly
                 if let Ok(result) = result {
                     let result = result.into();
@@ -47,8 +47,8 @@ impl CsvReader {
                 } else {
                     None
                 }
-                
-            });
+            },
+        );
 
         // The method then populates the buffer of the channel until it is full, waiting for a spot
         // to become available before continuing ensuring that there are never more than the
@@ -56,7 +56,7 @@ impl CsvReader {
         while let Some(transaction) = reader.next().await {
             // Send the transaction and break the loop if the send is an Err as that means the
             // receiver has been closed
-            if let Err(_) = self.sender.send(transaction).await {
+            if self.sender.send(transaction).await.is_err() {
                 break;
             }
         }

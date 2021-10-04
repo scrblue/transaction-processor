@@ -19,7 +19,7 @@ pub enum Error {
     NotDisputed,
 
     /// An error in the DbLayer
-    DbError(String),
+    DbLayer(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]

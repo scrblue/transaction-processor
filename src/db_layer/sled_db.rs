@@ -38,15 +38,16 @@ impl SledDb {
             match result {
                 Ok(client) => match bincode::deserialize::<Client>(&client.1) {
                     Ok(client) => {
-                        if let Err(_) = self.clients_sender.send(Ok(client)).await {
+                        if self.clients_sender.send(Ok(client)).await.is_err() {
                             break;
                         }
                     }
                     Err(e) => {
-                        if let Err(_) = self
+                        if self
                             .clients_sender
-                            .send(Err(Error::DbError(format!("Error deserializing: {}", e))))
+                            .send(Err(Error::DbLayer(format!("Error deserializing: {}", e))))
                             .await
+                            .is_err()
                         {
                             break;
                         }
@@ -54,10 +55,11 @@ impl SledDb {
                 },
 
                 Err(e) => {
-                    if let Err(_) = self
+                    if self
                         .clients_sender
-                        .send(Err(Error::DbError(format!("{}", e))))
+                        .send(Err(Error::DbLayer(format!("{}", e))))
                         .await
+                        .is_err()
                     {
                         break;
                     }
@@ -69,7 +71,7 @@ impl SledDb {
 
 impl From<sled::Error> for Error {
     fn from(e: sled::Error) -> Error {
-        Error::DbError(format!("{}", e))
+        Error::DbLayer(format!("{}", e))
     }
 }
 
@@ -86,15 +88,11 @@ impl DbLayer for SledDb {
     }
     async fn get_transaction(&mut self, transaction_id: u32) -> Result<Option<Transaction>, Error> {
         let tree = self.db.open_tree("transactions")?;
-        if let Some(result) = tree
+        if let Some(Ok(transaction)) = tree
             .get(transaction_id.to_le_bytes())?
             .map(|bytes| bincode::deserialize(&bytes))
         {
-            if let Ok(transaction) = result {
-                Ok(Some(transaction))
-            } else {
-                Ok(None)
-            }
+            Ok(Some(transaction))
         } else {
             Ok(None)
         }
@@ -111,15 +109,11 @@ impl DbLayer for SledDb {
     }
     async fn get_client(&mut self, client_id: u16) -> Result<Option<Client>, Error> {
         let tree = self.db.open_tree("clients")?;
-        if let Some(result) = tree
+        if let Some(Ok(client)) = tree
             .get(client_id.to_le_bytes())?
             .map(|bytes| bincode::deserialize(&bytes))
         {
-            if let Ok(client) = result {
-                Ok(Some(client))
-            } else {
-                Ok(None)
-            }
+            Ok(Some(client))
         } else {
             Ok(None)
         }

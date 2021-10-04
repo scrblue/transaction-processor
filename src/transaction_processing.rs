@@ -64,7 +64,7 @@ fn process_deposit(client: &mut Client, transaction: Transaction) -> Result<(), 
         client.total += amount;
         Ok(())
     } else {
-        return Err(Error::NoAmount);
+        Err(Error::NoAmount)
     }
 }
 
