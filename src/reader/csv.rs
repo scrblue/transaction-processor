@@ -1,10 +1,9 @@
-use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tokio::{fs::File, sync::mpsc};
 use tokio_stream::StreamExt;
 
 use super::*;
-use crate::{HumanReadableTransaction, Transaction, TransactionType};
+use crate::{HumanReadableTransaction, Transaction};
 
 /// An Implementor of the TransactionReader trait which reads CSV values from a given file
 pub struct CsvReader {

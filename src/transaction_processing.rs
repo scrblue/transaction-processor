@@ -1,5 +1,4 @@
 use super::*;
-use db_layer::DbLayer;
 
 /// Process a single transaction
 pub async fn process_transaction(
