@@ -31,18 +31,27 @@ pub async fn process_transaction(
         }
 
         TransactionType::Dispute => {
-            let referenced_transaction = db.get_transaction(transaction.tx).await?;
-            process_dispute(&mut client, referenced_transaction)?;
+            let mut referenced_transaction = db.get_transaction(transaction.tx).await?;
+            process_dispute(&mut client, &mut referenced_transaction)?;
+            if let Some(referenced_transaction) = referenced_transaction {
+                db.write_transaction(referenced_transaction).await?;
+            }
         }
 
         TransactionType::Resolve => {
-            let referenced_transaction = db.get_transaction(transaction.tx).await?;
-            process_resolve(&mut client, referenced_transaction)?;
+            let mut referenced_transaction = db.get_transaction(transaction.tx).await?;
+            process_resolve(&mut client, &mut referenced_transaction)?;
+            if let Some(referenced_transaction) = referenced_transaction {
+                db.write_transaction(referenced_transaction).await?;
+            }
         }
 
         TransactionType::Chargeback => {
-            let referenced_transaction = db.get_transaction(transaction.tx).await?;
-            process_chargeback(&mut client, referenced_transaction)?;
+            let mut referenced_transaction = db.get_transaction(transaction.tx).await?;
+            process_chargeback(&mut client, &mut referenced_transaction)?;
+            if let Some(referenced_transaction) = referenced_transaction {
+                db.write_transaction(referenced_transaction).await?;
+            }
         }
     }
 
@@ -76,13 +85,15 @@ fn process_withdrawal(client: &mut Client, transaction: Transaction) -> Result<(
 
 fn process_dispute(
     client: &mut Client,
-    referenced_transaction: Option<Transaction>,
+    referenced_transaction: &mut Option<Transaction>,
 ) -> Result<(), Error> {
-    if let Some(referenced_transaction) = referenced_transaction {
+    // TODO: Check that the transaction hasn't already been disputed
+    if let Some(mut referenced_transaction) = referenced_transaction.as_mut() {
         if referenced_transaction.client == client.client {
             if let Some(amount) = referenced_transaction.amount {
                 client.available -= amount;
                 client.held += amount;
+                referenced_transaction.disputed = true;
                 Ok(())
             } else {
                 Err(Error::NoAmount)
@@ -97,16 +108,21 @@ fn process_dispute(
 
 fn process_resolve(
     client: &mut Client,
-    referenced_transaction: Option<Transaction>,
+    referenced_transaction: &mut Option<Transaction>,
 ) -> Result<(), Error> {
-    if let Some(referenced_transaction) = referenced_transaction {
+    if let Some(mut referenced_transaction) = referenced_transaction.as_mut() {
         if referenced_transaction.client == client.client {
-            if let Some(amount) = referenced_transaction.amount {
-                client.available += amount;
-                client.held -= amount;
-                Ok(())
+            if referenced_transaction.disputed {
+                if let Some(amount) = referenced_transaction.amount {
+                    client.available += amount;
+                    client.held -= amount;
+                    referenced_transaction.disputed = false;
+                    Ok(())
+                } else {
+                    Err(Error::NoAmount)
+                }
             } else {
-                Err(Error::NoAmount)
+                Err(Error::NotDisputed)
             }
         } else {
             Err(Error::ReferencesWrongClient)
@@ -118,17 +134,22 @@ fn process_resolve(
 
 fn process_chargeback(
     client: &mut Client,
-    referenced_transaction: Option<Transaction>,
+    referenced_transaction: &mut Option<Transaction>,
 ) -> Result<(), Error> {
-    if let Some(referenced_transaction) = referenced_transaction {
+    if let Some(mut referenced_transaction) = referenced_transaction.as_mut() {
         if referenced_transaction.client == client.client {
-            if let Some(amount) = referenced_transaction.amount {
-                client.held -= amount;
-                client.total -= amount;
-                client.locked = true;
-                Ok(())
+            if referenced_transaction.disputed {
+                if let Some(amount) = referenced_transaction.amount {
+                    client.held -= amount;
+                    client.total -= amount;
+                    client.locked = true;
+                    referenced_transaction.disputed = false;
+                    Ok(())
+                } else {
+                    Err(Error::NoAmount)
+                }
             } else {
-                Err(Error::NoAmount)
+                Err(Error::NotDisputed)
             }
         } else {
             Err(Error::ReferencesWrongClient)

@@ -15,6 +15,8 @@ pub enum Error {
     /// If a Dispute, Resolve, or Chargeback transaction references a transaction with a differnt
     /// client than expected
     ReferencesWrongClient,
+    /// If a Resolve or a Chargeback references a transaction that isn't disputed
+    NotDisputed,
 
     /// An error in the DbLayer
     DbError(String),
@@ -47,6 +49,8 @@ pub struct Transaction {
     /// The amount of the deposit or withdrawal. This field will be None for any other TransactionType
     #[serde(default)]
     pub amount: Option<i64>,
+
+    pub disputed: bool,
 }
 
 /// A single transaction meant to be readable by a human
@@ -75,6 +79,7 @@ impl From<HumanReadableTransaction> for Transaction {
             client: transaction.client,
             tx: transaction.tx,
             amount: transaction.amount,
+            disputed: false,
         }
     }
 }
